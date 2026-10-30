@@ -1,5 +1,5 @@
-from ehrql import create_dataset, codelist_from_csv, case
-from ehrql.tables.national_sde import patients, artificial_hes_apc_2425
+from ehrql import create_dataset, codelist_from_csv
+from ehrql.tables.national_sde import artificial_hes_apc_2425
 
 diagnosis_codes = codelist_from_csv(
     "local_codelists/icd10_heart_codes.csv",
