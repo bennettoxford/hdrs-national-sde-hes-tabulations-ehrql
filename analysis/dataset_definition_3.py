@@ -1,10 +1,7 @@
 import calendar
 from datetime import date
 from ehrql import create_dataset, get_parameter
-from ehrql.tables.national_sde import (
-    artificial_hes_apc_2425,
-    artificial_hes_apc_2223,
-)
+from ehrql.tables.databricks import hospital_admissions
 
 asthma_codes = ["J450", "J451", "J458", "J459", "J46X"]
 wheeze_codes = ["R062"]
@@ -32,99 +29,56 @@ period_end = date(end_year, end_month, calendar.monthrange(end_year, end_month)[
 dataset = create_dataset()
 
 
-def emergency_admissions(dataset):
-    return dataset.where(dataset.fde == 1).where(
-        dataset.disdate.is_on_or_between(period_start, period_end)
-        & dataset.admimeth.is_in(emergency_admission_methods)
-        & dataset.classpat.is_in(patient_classification_codes)
+emergency_admissions = hospital_admissions.where(hospital_admissions.fde == 1).where(
+    hospital_admissions.disdate.is_on_or_between(period_start, period_end)
+    & hospital_admissions.admimeth.is_in(emergency_admission_methods)
+    & hospital_admissions.classpat.is_in(patient_classification_codes)
+)
+
+
+age_one_to_five_admissions = hospital_admissions.where(
+    (hospital_admissions.startage_calc > 1) & (hospital_admissions.startage_calc <= 5)
+)
+
+
+age_one_to_five_viral_wheeze_asthma_admissions = age_one_to_five_admissions.where(
+    age_one_to_five_admissions.diag_4_01.is_in(viral_infection_codes)
+    & age_one_to_five_admissions.diag_4_02.is_in(wheeze_codes)
+    & age_one_to_five_admissions.diag_4_03.is_in(asthma_codes)
+)
+
+
+age_one_to_five_asthma_admissions = age_one_to_five_admissions.where(
+    age_one_to_five_admissions.diag_4_01.is_in(asthma_codes)
+    | (
+        age_one_to_five_admissions.diag_4_01.is_in(wheeze_codes)
+        & age_one_to_five_admissions.diag_4_02.is_in(asthma_codes)
     )
-
-
-emergency_admissions_2223 = emergency_admissions(artificial_hes_apc_2223)
-emergency_admissions_2425 = emergency_admissions(artificial_hes_apc_2425)
-
-
-def age_one_to_five_admissions(dataset):
-    return dataset.where((dataset.startage_calc > 1) & (dataset.startage_calc <= 5))
-
-
-def age_one_to_five_viral_wheeze_asthma_admissions(dataset):
-    return age_one_to_five_admissions(dataset).where(
-        dataset.diag_4_01.is_in(viral_infection_codes)
-        & dataset.diag_4_02.is_in(wheeze_codes)
-        & dataset.diag_4_03.is_in(asthma_codes)
-    )
-
-
-def age_one_to_five_asthma_admissions(dataset):
-    return age_one_to_five_admissions(dataset).where(
-        dataset.diag_4_01.is_in(asthma_codes)
-        | (dataset.diag_4_01.is_in(wheeze_codes) & dataset.diag_4_02.is_in(asthma_codes))
-    )
-
-
-def age_six_to_sixteen_asthma_admissions(dataset):
-    return dataset.where((dataset.startage_calc > 5) & (dataset.startage_calc <= 16)).where(
-        dataset.diag_4_01.is_in(asthma_codes)
-    )
-
-
-age_one_to_five_asthma_admissions_2223 = age_one_to_five_asthma_admissions(
-    emergency_admissions_2223
 )
-age_one_to_five_viral_wheeze_asthma_admissions_2223 = (
-    age_one_to_five_viral_wheeze_asthma_admissions(emergency_admissions_2223)
-)
-age_six_to_sixteen_asthma_admissions_2223 = age_six_to_sixteen_asthma_admissions(
-    emergency_admissions_2223
-)
-age_one_to_five_asthma_admissions_2425 = age_one_to_five_asthma_admissions(
-    emergency_admissions_2425
-)
-age_one_to_five_viral_wheeze_asthma_admissions_2425 = (
-    age_one_to_five_viral_wheeze_asthma_admissions(emergency_admissions_2425)
-)
-age_six_to_sixteen_asthma_admissions_2425 = age_six_to_sixteen_asthma_admissions(
-    emergency_admissions_2425
-)
+
+age_six_to_sixteen_asthma_admissions = hospital_admissions.where(
+    (hospital_admissions.startage_calc > 5) & (hospital_admissions.startage_calc <= 16)
+).where(hospital_admissions.diag_4_01.is_in(asthma_codes))
 
 
 dataset.define_population(
-    age_one_to_five_asthma_admissions_2223.exists_for_patient()
-    | age_one_to_five_viral_wheeze_asthma_admissions_2223.exists_for_patient()
-    | age_six_to_sixteen_asthma_admissions_2223.exists_for_patient()
-    | age_one_to_five_asthma_admissions_2425.exists_for_patient()
-    | age_one_to_five_viral_wheeze_asthma_admissions_2425.exists_for_patient()
-    | age_six_to_sixteen_asthma_admissions_2425.exists_for_patient()
+    age_one_to_five_asthma_admissions.exists_for_patient()
+    | age_one_to_five_viral_wheeze_asthma_admissions.exists_for_patient()
+    | age_six_to_sixteen_asthma_admissions.exists_for_patient()
 )
 
 dataset.add_event_table(
-    "age_one_to_five_asthma_admissions_2223",
-    provider_code=age_one_to_five_asthma_admissions_2223.procodet,
-    hospital_code=age_one_to_five_asthma_admissions_2223.sitetret,
+    "age_one_to_five_asthma_admissions",
+    provider_code=age_one_to_five_asthma_admissions.procodet,
+    hospital_code=age_one_to_five_asthma_admissions.sitetret,
 )
 dataset.add_event_table(
-    "age_one_to_five_viral_wheeze_asthma_admissions_2223",
-    provider_code=age_one_to_five_viral_wheeze_asthma_admissions_2223.procodet,
-    hospital_code=age_one_to_five_viral_wheeze_asthma_admissions_2223.sitetret,
+    "age_one_to_five_viral_wheeze_asthma_admissions",
+    provider_code=age_one_to_five_viral_wheeze_asthma_admissions.procodet,
+    hospital_code=age_one_to_five_viral_wheeze_asthma_admissions.sitetret,
 )
 dataset.add_event_table(
-    "age_six_to_sixteen_asthma_admissions_2223",
-    provider_code=age_six_to_sixteen_asthma_admissions_2223.procodet,
-    hospital_code=age_six_to_sixteen_asthma_admissions_2223.sitetret,
-)
-dataset.add_event_table(
-    "age_one_to_five_asthma_admissions_2425",
-    provider_code=age_one_to_five_asthma_admissions_2425.procodet,
-    hospital_code=age_one_to_five_asthma_admissions_2425.sitetret,
-)
-dataset.add_event_table(
-    "age_one_to_five_viral_wheeze_asthma_admissions_2425",
-    provider_code=age_one_to_five_viral_wheeze_asthma_admissions_2425.procodet,
-    hospital_code=age_one_to_five_viral_wheeze_asthma_admissions_2425.sitetret,
-)
-dataset.add_event_table(
-    "age_six_to_sixteen_asthma_admissions_2425",
-    provider_code=age_six_to_sixteen_asthma_admissions_2425.procodet,
-    hospital_code=age_six_to_sixteen_asthma_admissions_2425.sitetret,
+    "age_six_to_sixteen_asthma_admissions",
+    provider_code=age_six_to_sixteen_asthma_admissions.procodet,
+    hospital_code=age_six_to_sixteen_asthma_admissions.sitetret,
 )
