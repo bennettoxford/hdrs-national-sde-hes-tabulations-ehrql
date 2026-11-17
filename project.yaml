@@ -18,3 +18,9 @@ actions:
     outputs:
       highly_sensitive:
         dataset: output/example_3/period_3/*.arrow
+
+  generate_dataset_example_1:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition_1.py --output output/example_1/:arrow
+    outputs:
+      highly_sensitive:
+        dataset: output/example_1/*.arrow
