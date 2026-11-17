@@ -1,6 +1,24 @@
 version: '5.0'
 
 actions:
+  generate_dataset_period_1:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition_3.py --output output/example_3/period_1/:arrow -- --period_start "2022-04-01"
+    outputs:
+      highly_sensitive:
+        dataset: output/example_3/period_1/*.arrow
+
+  generate_dataset_period_2:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition_3.py --output output/example_3/period_2/:arrow -- --period_start "2023-04-01"
+    outputs:
+      highly_sensitive:
+        dataset: output/example_3/period_2/*.arrow
+
+  generate_dataset_period_3:
+    run: ehrql:v1 generate-dataset analysis/dataset_definition_3.py --output output/example_3/period_3/:arrow -- --period_start "2024-04-01"
+    outputs:
+      highly_sensitive:
+        dataset: output/example_3/period_3/*.arrow
+
   generate_dataset_example_1:
     run: ehrql:v1 generate-dataset analysis/dataset_definition_1.py --output output/example_1/:arrow
     outputs:
